@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/studio.svg" width="100%" alt="yvr1x02, typed beside an isometric studio at night: a desk lit by a lamp and a monitor, a skateboard on the wall, rain at the window.">
+  <img src="assets/studio.svg" width="100%" alt="yvr1x02: web apps, applications, games and 3D, typed beside an isometric studio at night: a desk lit by a lamp and a monitor, a skateboard on the wall, rain at the window.">
 </p>
 
 I build web applications with React and TypeScript, and interactive 3D for the web with PlayCanvas, at eSimple in Arezzo.<br>

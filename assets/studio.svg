@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-620 -10 1860 920" role="img" aria-labelledby="title">
-<title id="title">yvr1x02: an isometric studio at night</title>
+<title id="title">yvr1x02: web apps, applications, games and 3D. An isometric studio at night</title>
 <style>
 @keyframes type{from{transform:translateX(-100%)}}
 @keyframes show{from{opacity:0}}
@@ -14,6 +14,7 @@
 .b34{animation-delay:1.6s} .b43{animation-delay:3.1s} .b52{animation-delay:4.6s}
 .t0{transform-box:fill-box;animation:type 0.7s steps(7,end) 0.6s backwards}
 .o0{animation:show 0s 1.3s backwards}
+.o1{animation:show .6s 1.5s backwards}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 <defs><clipPath id="c0"><rect class="t0" x="-545" y="380" width="400" height="120"/></clipPath></defs>
@@ -23,4 +24,5 @@
 <text x="-540" y="480" fill="#FAFAFA" font-size="88" letter-spacing="-1" textLength="380" lengthAdjust="spacingAndGlyphs" clip-path="url(#c0)">yvr1x02</text>
 <rect class="o0 blink" x="-146" y="410" width="40" height="78" fill="#D62839"/>
 </g>
+<text class="o1" x="-538" y="548" fill="#A1A1AA" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" letter-spacing="1">web apps · applications · games · 3D</text>
 </svg>
