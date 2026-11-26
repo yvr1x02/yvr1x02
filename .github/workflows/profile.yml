@@ -1,0 +1,43 @@
+name: Profile images
+
+# Every hour: the studio for the time of day in Rome, and the contributions calendar.
+# The images go to the `output` branch, which the README links to, so main keeps a clean history.
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['scripts/**', 'assets/**', '.github/workflows/profile.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-images
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Draw the images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir dist
+          node scripts/studio-time.mjs dist/studio.svg
+          node scripts/contributions.mjs dist/contributions.svg
+      - name: Publish to the output branch
+        run: |
+          cd dist
+          git init -q -b output
+          git config user.name "yvr1x02"
+          git config user.email "128586274+yvr1x02@users.noreply.github.com"
+          git add .
+          git commit -q -m "Update profile images"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" output
