@@ -21,7 +21,7 @@ I build websites and web apps with React and TypeScript, and interactive 3D for 
 ### Activity
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/yvr1x02/yvr1x02/output/contributions.svg" width="100%" alt="My contributions in the last year, with Yuyu, the mascot of Nockdock, skating under the calendar.">
+  <img src="https://raw.githubusercontent.com/yvr1x02/yvr1x02/output/contributions.svg" width="100%" alt="My contributions in the last year, with Yuyu, the mascot of Nockdock, under the calendar: skating by day, cruising at dusk, asleep on his board at night.">
 </p>
 
 <p align="center">
