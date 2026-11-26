@@ -2,38 +2,32 @@
   "frameWidth": 72,
   "frameHeight": 104,
   "animations": {
-    "sleep": {
-      "start": 0,
-      "count": 8,
-      "fps": 3,
-      "loop": true
-    },
     "ride": {
-      "start": 8,
+      "start": 0,
       "count": 8,
       "fps": 10,
       "loop": true
     },
     "push": {
-      "start": 16,
+      "start": 8,
       "count": 10,
       "fps": 10,
       "loop": false
     },
     "ollie": {
-      "start": 26,
+      "start": 18,
       "count": 11,
       "fps": 12,
       "loop": false
     },
     "kickflip": {
-      "start": 37,
+      "start": 29,
       "count": 12,
       "fps": 12,
       "loop": false
     },
     "shoveit": {
-      "start": 49,
+      "start": 41,
       "count": 13,
       "fps": 12,
       "loop": false
