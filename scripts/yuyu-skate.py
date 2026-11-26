@@ -1,6 +1,5 @@
 """Builds Yuyu's skateboard sprite sheet from his idleSide frames (NockDock's buddy.png), and the
-run strips the contributions calendar plays, one frame per tick: tricks by day, cruising at
-dusk, asleep on the board at night.
+run strip the contributions calendar plays: one frame per tick, tricks included.
 Usage: python3 scripts/yuyu-skate.py <buddy.png> <out-dir>"""
 import json, math, sys
 from PIL import Image, ImageDraw
@@ -13,7 +12,6 @@ DECK = GROUND - 8        # deck surface row when the board is on the ground
 FEET = DECK - 1          # Yuyu's soles rest on the row above
 src = Image.open(SRC).convert("RGBA")
 BODY = [src.crop(((8 + i) * 48, 0, (9 + i) * 48, 64)) for i in range(8)]
-SLEEP = [src.crop(((60 + i) * 48, 0, (61 + i) * 48, 64)) for i in range(8)]
 
 # --- palette -------------------------------------------------------------------
 O = (20, 18, 28, 255)
@@ -185,14 +183,14 @@ def end_on(img, cx, row):
 
 
 # --- Yuyu's body ------------------------------------------------------------------
-def body(i=0, crouch=0, tuck=0, lean=0, head=0, push=None, sleep=False):
+def body(i=0, crouch=0, tuck=0, lean=0, head=0, push=None):
     """Yuyu's idleSide frame i, adjusted:
     crouch  head and torso sink into the legs (knees bend)
     tuck    legs pulled up under the hoodie, in the air
     lean    torso leans forward (+) or back (-), sheared a pixel at a time
     head    head bobs down (+) or up (-) against the torso
     push    (dx, dy): the back foot reaches down and back to push off the ground"""
-    base = (SLEEP if sleep else BODY)[i % 8]
+    base = BODY[i % 8]
     b = base.copy()
     if push:
         dx, dy = push
@@ -340,12 +338,7 @@ def shoveit():
     return run(seq)
 
 
-def sleep():
-    # Parked, asleep standing on the board, his Zzz floating up.
-    return [frame(i=k, sleep=True) for k in range(8)]
-
-
-ANIMS = {"sleep": (sleep(), 3, True), "ride": (ride(), 10, True), "push": (push(), 10, False), "ollie": (ollie(), 12, False),
+ANIMS = {"ride": (ride(), 10, True), "push": (push(), 10, False), "ollie": (ollie(), 12, False),
          "kickflip": (kickflip(), 12, False), "shoveit": (shoveit(), 12, False)}
 
 frames, meta, start = [], {}, 0
@@ -360,28 +353,19 @@ sheet.save(f"{OUT}/yuyu-skate.png", optimize=True)
 json.dump({"frameWidth": FW, "frameHeight": FH, "animations": meta}, open(f"{OUT}/yuyu-skate.json", "w"), indent=2)
 print(meta)
 
-# The runs under the calendar, one per time of day. They share one crop so they line up.
+# The run under the calendar: push, ride, ollie, ride, kickflip, ride, push, ride, shove-it, ride.
 def seq(name, k=None):
     a = meta[name]
     idx = [a["start"] + i for i in range(a["count"])]
     return idx if k is None else [idx[i % len(idx)] for i in range(k)]
 
 
-RUNS = {
-    # By day: push, ride, ollie, ride, kickflip, ride, push, ride, shove-it, ride.
-    "day": (seq("push") + seq("ride", 14) + seq("ollie") + seq("ride", 16) + seq("kickflip") + seq("ride", 14)
-            + seq("push") + seq("ride", 10) + seq("shoveit") + seq("ride", 20), 10),
-    # At dusk: no tricks, just cruising and the odd push, a little slower.
-    "dusk": (seq("push") + seq("ride", 60) + seq("push") + seq("ride", 70), 8),
-    # At night: parked and asleep.
-    "night": (seq("sleep"), 3),
-}
-top = min(frames[i].getbbox()[1] for run, _ in RUNS.values() for i in set(run))
-for name, (run, fps) in RUNS.items():
-    strip = Image.new("RGBA", (FW * len(run), FH - top))
-    for k, i in enumerate(run):
-        strip.paste(frames[i].crop((0, top, FW, FH)), (k * FW, 0))
-    strip.save(f"{OUT}/yuyu-run-{name}.png", optimize=True)
-    json.dump({"frameWidth": FW, "frameHeight": FH - top, "frames": len(run), "fps": fps,
-               "boardCenterX": CX + 25, "groundY": GROUND - top, "headY": FEET - 62 + 16 - top,
-               "bodyRight": CX + 40}, open(f"{OUT}/yuyu-run-{name}.json", "w"))
+RUN = (seq("push") + seq("ride", 14) + seq("ollie") + seq("ride", 16) + seq("kickflip") + seq("ride", 14)
+       + seq("push") + seq("ride", 10) + seq("shoveit") + seq("ride", 20))
+top = min(frames[i].getbbox()[1] for i in set(RUN))
+strip = Image.new("RGBA", (FW * len(RUN), FH - top))
+for k, i in enumerate(RUN):
+    strip.paste(frames[i].crop((0, top, FW, FH)), (k * FW, 0))
+strip.save(f"{OUT}/yuyu-skate-run.png", optimize=True)
+json.dump({"frameWidth": FW, "frameHeight": FH - top, "frames": len(RUN), "fps": 10,
+           "boardCenterX": CX + 25, "groundY": GROUND - top}, open(f"{OUT}/yuyu-skate-run.json", "w"))
