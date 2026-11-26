@@ -8,7 +8,7 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 FW, FH = 72, 104         # frame size: room for the board, a push and some air
 CX = 10                  # where the 48px body sits horizontally
 GROUND = 99              # wheels touch this row
-DECK = GROUND - 13       # deck surface row when the board is on the ground
+DECK = GROUND - 11       # deck surface row when the board is on the ground
 FEET = DECK - 1          # Yuyu's soles rest on the row above
 src = Image.open(SRC).convert("RGBA")
 BODY = [src.crop(((8 + i) * 48, 0, (9 + i) * 48, 64)) for i in range(8)]
@@ -27,7 +27,7 @@ CORE, CORE_D = (214, 40, 57, 255), (120, 22, 34, 255)
 LINE = (113, 113, 122, 150)
 SHADOW = (0, 0, 0, 110)
 
-L = 36  # board length; every board is drawn nose to the right
+L = 28  # board length; every board is drawn nose to the right
 
 
 def outline(b, only=lambda x, y: True):
@@ -43,7 +43,7 @@ def outline(b, only=lambda x, y: True):
 def deck_top(x):
     """The deck's top edge: flat in the middle, kicked up at tail and nose."""
     k = min(x, L - 1 - x)
-    return 3 - round(max(0, 5 - k) ** 1.4 / 5 ** 1.4 * 3)
+    return 3 - round(max(0, 4 - k) ** 1.4 / 4 ** 1.4 * 2)
 
 
 def side_board(phase=0):
@@ -53,66 +53,58 @@ def side_board(phase=0):
         end = x in (0, L - 1)
         b[(x, t - 1)] = O
         b[(x, t)] = O if end else GRIP
-        b[(x, t + 1)] = O if end else (WOOD_D if min(x, L - 1 - x) < 5 else WOOD)
-        b[(x, t + 2)] = O if end else (RED_L if x % 8 in (3, 4) else RED)
-        b[(x, t + 3)] = O if x in (0, 1, L - 2, L - 1) else RED_D
-        b[(x, t + 4)] = O
+        b[(x, t + 1)] = O if end else (WOOD_D if min(x, L - 1 - x) < 4 else WOOD)
+        b[(x, t + 2)] = O if end else (RED_L if x % 7 in (3, 4) else RED)
+        b[(x, t + 3)] = O
     wheels = {}
-    for cx in (9, L - 10):
-        # Truck: baseplate, kingpin with its bushing, hanger, axle nut.
-        for x in range(cx - 2, cx + 3):
-            b[(x, 8)] = METAL_D
+    for cx in (7, L - 8):
+        # Truck: baseplate, kingpin with its bushing, hanger.
         for x in range(cx - 1, cx + 2):
-            b[(x, 9)] = METAL
-        b[(cx, 9)] = BUSH
-        for x in range(cx - 3, cx + 4):
-            b[(x, 10)] = METAL_L if x < cx else METAL
-        # Wheel: rounded urethane, a red core, a bearing mark that turns.
-        for dx in range(-2, 3):
-            for dy in range(5):
-                if abs(dx) == 2 and dy in (0, 4):
+            b[(x, 7)] = METAL_D
+        b[(cx, 8)] = BUSH
+        for x in range(cx - 2, cx + 3):
+            b[(x, 9)] = METAL_L if x < cx else METAL
+        # Wheel: 4x4 urethane with a red core whose bearing mark turns.
+        for dx in range(-2, 2):
+            for dy in range(4):
+                if dx in (-2, 1) and dy in (0, 3):
                     continue
-                shade = WHEEL_L if (dx == -2 or dy == 0) else (WHEEL_D if (dx == 2 or dy == 4) else WHEEL)
-                wheels[(cx + dx, 11 + dy)] = shade
-        for dx, dy in ((-1, 1), (0, 1), (1, 1), (-1, 2), (1, 2), (-1, 3), (0, 3), (1, 3)):
-            wheels[(cx + dx, 11 + dy)] = CORE
-        ring = [(-1, 1), (0, 1), (1, 1), (1, 2), (1, 3), (0, 3), (-1, 3), (-1, 2)]
-        rx, ry = ring[phase % 8]
-        wheels[(cx + rx, 11 + ry)] = CORE_D
-        wheels[(cx, 13)] = METAL_L
+                wheels[(cx + dx, 10 + dy)] = WHEEL_L if (dx == -2 or dy == 0) else (WHEEL_D if (dx == 1 or dy == 3) else WHEEL)
+        ring = [(-1, 1), (0, 1), (0, 2), (-1, 2)]
+        for dx, dy in ring:
+            wheels[(cx + dx, 10 + dy)] = CORE
+        rx, ry = ring[phase % 4]
+        wheels[(cx + rx, 10 + ry)] = CORE_D
     b.update(wheels)
-    outline(b, lambda x, y: y >= 8)
+    outline(b, lambda x, y: y >= 7)
     return b
 
 
 def under_board():
     """The graphic side, seen mid-kickflip: a YI monogram on red, trucks and wheels towards us."""
     rows = [
-        "...oooooooooooooooooooooooooooooo...",
-        ".ooRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRoo.",
-        "oRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRo",
-        "oRRRRRRRRRRRRWRRRWRRWWWRRRRRRRRRRRRo",
-        "oRRRRRRRRRRRRRWRWRRRRWRRRRRRRRRRRRRo",
-        "oRRRRRRRRRRRRRRWRRRRRWRRRRRRRRRRRRRo",
-        "oRRRRRRRRRRRRRRWRRRRRWRRRRRRRRRRRRRo",
-        "oRRRRRRRRRRRRRRWRRRRWWWRRRRRRRRRRRRo",
-        "oDRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRDo",
-        ".ooDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDoo.",
-        "...oooooooooooooooooooooooooooooo...",
+        "..oooooooooooooooooooooooo..",
+        ".oRRRRRRRRRRRRRRRRRRRRRRRRo.",
+        "oRRRRRRRRRWRRRWRWWWRRRRRRRRo",
+        "oRRRRRRRRRRWRWRRRWRRRRRRRRRo",
+        "oRRRRRRRRRRRWRRRRWRRRRRRRRRo",
+        "oRRRRRRRRRRRWRRRWWWRRRRRRRRo",
+        "oDRRRRRRRRRRRRRRRRRRRRRRRRDo",
+        "..oooooooooooooooooooooooo..",
     ]
     key = {"o": O, "R": RED, "W": WHITE, "D": RED_D}
     b = {(x, y): key[c] for y, r in enumerate(rows) for x, c in enumerate(r) if c != "."}
     parts = {}
-    for cx in (8, L - 9):
+    for cx in (6, L - 7):
         # Baseplate and hanger seen from below, wheels sticking out past both edges.
-        for x in range(cx - 2, cx + 3):
-            for y in range(3, 8):
-                parts[(x, y)] = METAL_D if y in (3, 7) else METAL
-        parts[(cx, 5)] = BUSH
-        for y in range(-1, 12):
+        for x in range(cx - 1, cx + 2):
+            for y in range(2, 6):
+                parts[(x, y)] = METAL_D if y in (2, 5) else METAL
+        parts[(cx, 4)] = BUSH
+        for y in range(0, 8):
             parts.setdefault((cx, y), METAL_L)
-        for y0 in (-4, 11):
-            for dx in range(-2, 3):
+        for y0 in (-3, 8):
+            for dx in range(-1, 2):
                 for dy in range(3):
                     parts[(cx + dx, y0 + dy)] = CORE if dx == 0 and dy == 1 else (WHEEL_L if dy == 0 else WHEEL)
     b.update(parts)
@@ -123,23 +115,23 @@ def under_board():
 def grip_board():
     """Grip tape on top: speckled, with the eight truck bolts, wheels peeking out beyond."""
     b = {}
-    for cx in (8, L - 9):
-        for dx in range(-2, 3):
-            b[(cx + dx, 9)] = WHEEL_D
+    for cx in (6, L - 7):
+        for dx in range(-1, 2):
+            b[(cx + dx, 7)] = WHEEL_D
             b[(cx + dx, -1)] = WHEEL_D
     outline(b)
     for x in range(L):
-        for y in range(9):
-            if (x in (0, L - 1) and y in (0, 1, 7, 8)) or (x in (1, L - 2) and y in (0, 8)):
+        for y in range(7):
+            if (x in (0, L - 1) and y in (0, 6)):
                 continue
-            if y in (0, 8) or x in (0, L - 1):
+            if y in (0, 6) or x in (0, L - 1):
                 b[(x, y)] = O
                 continue
             n = (x * 37 + y * 91 + x * y * 13) % 11
             b[(x, y)] = GRIP_L if n == 0 else (GRIP_D if n in (3, 7) else GRIP)
-    for cx in (8, L - 9):
-        for dx in (-1, 2):
-            for dy in (2, 6):
+    for cx in (6, L - 7):
+        for dx in (-1, 1):
+            for dy in (2, 4):
                 b[(cx + dx, dy)] = BOLT
     return b
 
@@ -150,7 +142,7 @@ def flip_v(b):
 
 
 # The row of each board that lines up with the deck's resting row (and that it turns around).
-PIVOT = {"side": 3, "under": 5, "grip": 4, "upside": 13}
+PIVOT = {"side": 3, "under": 4, "grip": 3, "upside": 11}
 
 
 def plot_board(img, kind, cx, row, angle=0.0, sx=1.0, mirror=False, phase=0, min_y=0):
@@ -179,20 +171,18 @@ def plot_board(img, kind, cx, row, angle=0.0, sx=1.0, mirror=False, phase=0, min
 def end_on(img, cx, row):
     """The shove-it's end-on moment: the deck's edge, the truck and two wheels side by side."""
     b = {}
-    for x in range(-4, 4):
+    for x in range(-3, 3):
         b[(x, 0)] = GRIP
         b[(x, 1)] = WOOD
         b[(x, 2)] = RED
-        b[(x, 3)] = RED_D
-    for x in range(-1, 1):
-        b[(x, 4)] = METAL_D
-        b[(x, 5)] = BUSH if x == -1 else METAL
-    for x in range(-7, 7):
-        b[(x, 6)] = METAL_L if -5 < x < 4 else b.get((x, 6), METAL)
-    for x0 in (-7, 3):
-        for dx in range(4):
-            for dy in range(7, 11):
-                b[(x0 + dx, dy)] = CORE if dx in (1, 2) and dy in (8, 9) else (WHEEL_L if dy == 7 else WHEEL)
+    b[(-1, 3)] = METAL_D
+    b[(0, 3)] = BUSH
+    for x in range(-5, 5):
+        b[(x, 4)] = METAL_L if -4 < x < 3 else METAL
+    for x0 in (-6, 3):
+        for dx in range(3):
+            for dy in range(5, 9):
+                b[(x0 + dx, dy)] = CORE if dx == 1 and dy in (6, 7) else (WHEEL_L if dy == 5 else WHEEL)
     outline(b)
     px = img.load()
     for (x, y), c in b.items():
