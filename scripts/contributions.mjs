@@ -1,10 +1,23 @@
-// Draws the last year of contributions with Yuyu skating under the grid,
-// lighting each week as he passes. Reads the calendar from GitHub's GraphQL API.
-// Usage: GITHUB_TOKEN=... node scripts/contributions.mjs <out.svg> [--sample]
+// Draws the last year of contributions with Yuyu under the grid, following the time of day in
+// Rome: by day he skates through doing tricks and lights each week as he passes, at dusk he
+// cruises and talks, at night he sleeps on his parked board. Reads the calendar from GitHub.
+// Usage: GITHUB_TOKEN=... node scripts/contributions.mjs <out.svg> [--sample] [--phase=day|dusk|night]
 import { readFileSync, writeFileSync } from 'node:fs'
+import { phaseAt, dayOfYear } from './phase.mjs'
 
 const LOGIN = 'yvr1x02'
-const [out, flag] = process.argv.slice(2)
+const [out, ...flags] = process.argv.slice(2)
+const sample = flags.includes('--sample')
+const forcedPhase = flags.find((f) => f.startsWith('--phase='))?.slice(8)
+
+// Today's line for Yuyu's speech bubble, from scripts/yuyu-says.txt: one a day, in order.
+export function sayingFor(date) {
+  const lines = readFileSync(new URL('./yuyu-says.txt', import.meta.url), 'utf8')
+    .split('\n').map((l) => l.trim()).filter(Boolean)
+  return lines[dayOfYear(date) % lines.length]
+}
+
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 async function fetchCalendar() {
   const query = `query($login:String!){user(login:$login){contributionsCollection{contributionCalendar{
@@ -45,7 +58,7 @@ function sampleCalendar() {
   return { total, weeks }
 }
 
-export function draw({ total, weeks }) {
+export function draw({ total, weeks }, { phase = 'day', says = '' } = {}) {
   const CELL = 14, GAP = 4, STEP = CELL + GAP
   const PAD = 28, TOP = 92
   const gridW = weeks.length * STEP - GAP
@@ -55,9 +68,11 @@ export function draw({ total, weeks }) {
   const COLORS = ['#18181E', '#5A1820', '#8E1E2A', '#D62839', '#FF6B76']
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-  // Yuyu skates in from the left, pushes, does an ollie, a kickflip and a shove-it, and leaves
-  // on the right as the next loop brings him back in. The strip is pre-built: one frame per tick.
-  const run = JSON.parse(readFileSync(new URL('../assets/yuyu-skate-run.json', import.meta.url), 'utf8'))
+  // By day Yuyu skates in from the left, pushes, does an ollie, a kickflip and a shove-it, and
+  // leaves on the right as the next loop brings him back in; at dusk he only cruises. At night he
+  // stays put, asleep. Each strip is pre-built by yuyu-skate.py: one frame per tick.
+  const run = JSON.parse(readFileSync(new URL(`../assets/yuyu-run-${phase}.json`, import.meta.url), 'utf8'))
+  const moving = phase !== 'night'
   const SCALE = 1.4
   const FW = run.frameWidth * SCALE, FH = run.frameHeight * SCALE
   const LOOP = run.frames / run.fps
@@ -71,7 +86,7 @@ export function draw({ total, weeks }) {
     `@keyframes frames{to{transform:translateX(-${run.frameWidth * run.frames}px)}}`,
     // A week lights up when Yuyu reaches it and fades just before he comes back.
     '@keyframes lit{0%{opacity:.16}3%{opacity:1}84%{opacity:1}93%,100%{opacity:.16}}',
-    `.yuyu{animation:ride ${LOOP}s linear infinite}`,
+    moving ? `.yuyu{animation:ride ${LOOP}s linear infinite}` : `.yuyu{transform:translateX(${Math.round(W * 0.68)}px)}`,
     `.frames{animation:frames ${LOOP}s steps(${run.frames}) infinite}`,
     '.head{animation:show .6s .2s backwards}',
     '@media (prefers-reduced-motion:reduce){*{animation:none!important}.yuyu{transform:translateX(' + (W - PAD - FW) + 'px)}}',
@@ -88,22 +103,34 @@ export function draw({ total, weeks }) {
       months.push(`<text x="${x}" y="${TOP - 10}">${MONTHS[m]}</text>`)
     }
     lastMonth = m
-    css.push(`.w${c}{animation:lit ${LOOP}s linear ${at(x + CELL / 2).toFixed(2)}s infinite backwards}`)
+    if (moving) css.push(`.w${c}{animation:lit ${LOOP}s linear ${at(x + CELL / 2).toFixed(2)}s infinite backwards}`)
     for (const day of days) {
       const r = new Date(day.date + 'T00:00:00Z').getUTCDay()
       const y = TOP + r * STEP
-      const cls = day.level ? ` class="w${c}"` : ''
+      // At night the weeks stay lit, but low, while he sleeps.
+      const cls = day.level ? (moving ? ` class="w${c}"` : ' opacity=".55"') : ''
       cells.push(`<rect${cls} x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="3" fill="${COLORS[day.level]}"/>`)
     }
   })
 
   const LX = W - PAD - 46 - 5 * STEP + GAP
   const legend = COLORS.map((col, i) => `<rect x="${LX + i * STEP}" y="34" width="${CELL}" height="${CELL}" rx="3" fill="${col}"/>`).join('')
-  const sheet = readFileSync(new URL('../assets/yuyu-skate-run.png', import.meta.url)).toString('base64')
   const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
-
+  const sheet = readFileSync(new URL(`../assets/yuyu-run-${phase}.png`, import.meta.url)).toString('base64')
+  const spriteY = groundY - (run.groundY + 1) * SCALE
+  // The speech bubble rides along in front of his face; at night the frames have their own Zzz.
+  let bubble = ''
+  if (moving && says) {
+    const bx = (run.bodyRight + 3) * SCALE, by = spriteY + run.headY * SCALE - 8
+    const bw = Math.round(says.length * 7.8 + 24)
+    bubble = `<g font-family="${mono}"><path d="M${bx + 2} ${by + 30} l-8 7 l16 -7z" fill="#18181E" stroke="#3F3F46" stroke-width="1.5" stroke-linejoin="round"/>`
+      + `<rect x="${bx}" y="${by}" width="${bw}" height="30" rx="9" fill="#18181E" stroke="#3F3F46" stroke-width="1.5"/>`
+      + `<path d="M${bx + 3} ${by + 29.2} h12" stroke="#18181E" stroke-width="2"/>`
+      + `<text x="${bx + 12}" y="${by + 20}" font-size="13" fill="#FAFAFA">${esc(says)}</text></g>`
+  }
+  
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t">
-<title id="t">${total} contributions in the last year, with Yuyu skating under the calendar.</title>
+<title id="t">${total} contributions in the last year. ${moving ? `Yuyu skates under the calendar${says ? ` and says: ${esc(says)}` : ''}.` : 'Yuyu sleeps on his skateboard under the calendar.'}</title>
 <style>
 ${css.join('\n')}
 </style>
@@ -115,13 +142,15 @@ ${css.join('\n')}
 <g font-family="${mono}" font-size="13" fill="#71717A">${months.join('')}</g>
 ${cells.join('\n')}
 <path d="M${PAD} ${groundY} H${W - PAD}" stroke="#27272A" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
-<g class="yuyu"><svg x="0" y="${groundY - (run.groundY + 1) * SCALE}" width="${FW}" height="${FH}" viewBox="0 0 ${run.frameWidth} ${run.frameHeight}" overflow="hidden"><image class="frames" href="data:image/png;base64,${sheet}" width="${run.frameWidth * run.frames}" height="${run.frameHeight}" style="image-rendering:pixelated"/></svg></g>
+<g class="yuyu"><svg x="0" y="${spriteY}" width="${FW}" height="${FH}" viewBox="0 0 ${run.frameWidth} ${run.frameHeight}" overflow="hidden"><image class="frames" href="data:image/png;base64,${sheet}" width="${run.frameWidth * run.frames}" height="${run.frameHeight}" style="image-rendering:pixelated"/></svg>${bubble}</g>
 </svg>
 `
 }
 
 if (out) {
-  const data = flag === '--sample' ? sampleCalendar() : await fetchCalendar()
-  writeFileSync(out, draw(data))
-  console.log(`contributions: ${data.total}`)
+  const now = new Date()
+  const data = sample ? sampleCalendar() : await fetchCalendar()
+  const phase = forcedPhase || phaseAt(now)
+  writeFileSync(out, draw(data, { phase, says: sayingFor(now) }))
+  console.log(`contributions: ${data.total}, ${phase}`)
 }

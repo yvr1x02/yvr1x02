@@ -2,17 +2,9 @@
 // The night version is the master in assets/studio.svg; day and dusk are derived from it.
 // Usage: node scripts/studio-time.mjs <out.svg> [day|dusk|night]
 import { readFileSync, writeFileSync } from 'node:fs'
+import { phaseAt } from './phase.mjs'
 
 const [out, forced] = process.argv.slice(2)
-
-export function phaseAt(date) {
-  const hour = Number(
-    new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Rome' }).format(date)
-  )
-  if (hour >= 8 && hour < 18) return 'day'
-  if ((hour >= 6 && hour < 8) || (hour >= 18 && hour < 21)) return 'dusk'
-  return 'night'
-}
 
 const GLASS = 'd="M1096 401.9 L1156.4 436.7 L1156.4 309.9 L1096 275 Z" fill="rgb(13,16,24)"'
 
