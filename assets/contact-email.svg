@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 72" role="img" aria-labelledby="t">
+<title id="t">Email: yuri.impellizzeri.dev@gmail.com</title>
+<style>
+@keyframes show{from{opacity:0;transform:translateY(6px)}}
+@keyframes blink{50%{opacity:.25}}
+.b{animation:show .6s 0.2s backwards}.led{animation:blink 2.4s ease-in-out 0.2s infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g class="b">
+<rect x="1" y="1" width="298" height="70" rx="18" fill="#07070A" stroke="#27272A" stroke-width="2"/>
+<rect x="16" y="16" width="40" height="40" rx="11" fill="#D62839" fill-opacity=".14" stroke="#D62839" stroke-width="1.5"/>
+<g transform="translate(24 24)"><rect x="2" y="5" width="20" height="14" rx="2.5" fill="none" stroke="#FAFAFA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7l9 6 9-6" fill="none" stroke="#FAFAFA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="72" y="33" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" font-weight="700" fill="#FAFAFA">Email</text>
+<text x="72" y="54" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#A1A1AA">yuri.impellizzeri.dev@gmail.com</text>
+<circle class="led" cx="278" cy="36" r="4" fill="#D62839"/>
+</g>
+</svg>
