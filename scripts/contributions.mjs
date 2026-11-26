@@ -1,4 +1,4 @@
-// Draws the last year of contributions with Yuyu walking under the grid,
+// Draws the last year of contributions with Yuyu skating under the grid,
 // lighting each week as he passes. Reads the calendar from GitHub's GraphQL API.
 // Usage: GITHUB_TOKEN=... node scripts/contributions.mjs <out.svg> [--sample]
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -50,27 +50,31 @@ export function draw({ total, weeks }) {
   const PAD = 28, TOP = 92
   const gridW = weeks.length * STEP - GAP
   const W = gridW + PAD * 2
-  const groundY = TOP + 7 * STEP + 90
+  const groundY = TOP + 7 * STEP + 118
   const H = groundY + PAD
   const COLORS = ['#18181E', '#5A1820', '#8E1E2A', '#D62839', '#FF6B76']
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-  // Yuyu walks from off the left edge to off the right edge, then the loop waits a little.
-  const SPRITE = 48, SCALE = 1.6
-  const startX = PAD - SPRITE * SCALE, endX = W
-  const WALK = 20, LOOP = 27
-  const at = (x) => ((x - SPRITE * SCALE * 0.5 - startX) / (endX - startX)) * WALK
+  // Yuyu skates in from the left, pushes, does an ollie, a kickflip and a shove-it, and leaves
+  // on the right as the next loop brings him back in. The strip is pre-built: one frame per tick.
+  const run = JSON.parse(readFileSync(new URL('../assets/yuyu-skate-run.json', import.meta.url), 'utf8'))
+  const SCALE = 1.4
+  const FW = run.frameWidth * SCALE, FH = run.frameHeight * SCALE
+  const LOOP = run.frames / run.fps
+  const startX = -FW, endX = W
+  // When the board's centre passes a point x.
+  const at = (x) => ((x - run.boardCenterX * SCALE - startX) / (endX - startX)) * LOOP
 
   const css = [
     '@keyframes show{from{opacity:0}}',
-    `@keyframes walk{from{transform:translateX(${startX}px)}${((WALK / LOOP) * 100).toFixed(2)}%,to{transform:translateX(${endX}px)}}`,
-    `@keyframes frames{to{transform:translateX(-${SPRITE * 6}px)}}`,
+    `@keyframes ride{from{transform:translateX(${startX}px)}to{transform:translateX(${endX}px)}}`,
+    `@keyframes frames{to{transform:translateX(-${run.frameWidth * run.frames}px)}}`,
     // A week lights up when Yuyu reaches it and fades just before he comes back.
     '@keyframes lit{0%{opacity:.16}3%{opacity:1}84%{opacity:1}93%,100%{opacity:.16}}',
-    `.yuyu{animation:walk ${LOOP}s linear infinite}`,
-    '.frames{animation:frames .75s steps(6) infinite}',
+    `.yuyu{animation:ride ${LOOP}s linear infinite}`,
+    `.frames{animation:frames ${LOOP}s steps(${run.frames}) infinite}`,
     '.head{animation:show .6s .2s backwards}',
-    '@media (prefers-reduced-motion:reduce){*{animation:none!important}.yuyu{transform:translateX(' + (W - PAD - SPRITE * SCALE) + 'px)}}',
+    '@media (prefers-reduced-motion:reduce){*{animation:none!important}.yuyu{transform:translateX(' + (W - PAD - FW) + 'px)}}',
   ]
 
   const cells = []
@@ -95,11 +99,11 @@ export function draw({ total, weeks }) {
 
   const LX = W - PAD - 46 - 5 * STEP + GAP
   const legend = COLORS.map((col, i) => `<rect x="${LX + i * STEP}" y="34" width="${CELL}" height="${CELL}" rx="3" fill="${col}"/>`).join('')
-  const sheet = readFileSync(new URL('../assets/yuyu-walk.png', import.meta.url)).toString('base64')
+  const sheet = readFileSync(new URL('../assets/yuyu-skate-run.png', import.meta.url)).toString('base64')
   const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t">
-<title id="t">${total} contributions in the last year, with Yuyu walking under the calendar.</title>
+<title id="t">${total} contributions in the last year, with Yuyu skating under the calendar.</title>
 <style>
 ${css.join('\n')}
 </style>
@@ -111,7 +115,7 @@ ${css.join('\n')}
 <g font-family="${mono}" font-size="13" fill="#71717A">${months.join('')}</g>
 ${cells.join('\n')}
 <path d="M${PAD} ${groundY} H${W - PAD}" stroke="#27272A" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
-<g class="yuyu"><svg x="0" y="${groundY - 64 * SCALE + 2 * SCALE}" width="${SPRITE * SCALE}" height="${64 * SCALE}" viewBox="0 0 ${SPRITE} 64" overflow="hidden"><image class="frames" href="data:image/png;base64,${sheet}" width="${SPRITE * 6}" height="64" style="image-rendering:pixelated"/></svg></g>
+<g class="yuyu"><svg x="0" y="${groundY - (run.groundY + 1) * SCALE}" width="${FW}" height="${FH}" viewBox="0 0 ${run.frameWidth} ${run.frameHeight}" overflow="hidden"><image class="frames" href="data:image/png;base64,${sheet}" width="${run.frameWidth * run.frames}" height="${run.frameHeight}" style="image-rendering:pixelated"/></svg></g>
 </svg>
 `
 }
